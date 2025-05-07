@@ -11,9 +11,9 @@ final class ExternalLoggerService
 {
     private $trace_id;
     private $timestamp;
-    private $log_data;
+    private $log_data_model; // Changed from $log_data to $log_data_model for clarity
 
-    public function __construct($trace_id = null, $timestamp = null, $log_data = null)
+    public function __construct(string $trace_id = null, $timestamp = null, LogDataModel $log_data_model = null)
     {
         if (is_null($trace_id)) {
             // TODO Recover trace id from header injected by middleware
@@ -22,13 +22,55 @@ final class ExternalLoggerService
         if (is_null($timestamp)) {
             $timestamp = time();
         }
-        if (is_null($log_data)) {
-            $log_data = new LogDataModel();
+        if (is_null($log_data_model)) {
+            $log_data_model = new LogDataModel($this->trace_id, $this->timestamp);
         }
 
         $this->trace_id = $trace_id;
         $this->timestamp = $timestamp;
-        $this->log_data = $log_data;
+        $this->log_data_model = $log_data_model;
+    }
+
+    /**
+     * Creates and populates the log data model with the provided information.
+     *
+     * @param string|null $databaseTransaction Summary of the Doctrine ORM transaction.
+     * @param string|null $endpointAccessed The specific API endpoint accessed.
+     * @param array|null $requestDetails HTTP method and relevant request metadata.
+     * Example: ['method' => 'GET', 'ip_address' => '127.0.0.1']
+     * @param array|null $queryParameters Non-sensitive query string parameters.
+     * Example: ['filter' => 'active']
+     * @param string|null $payloadDetails Redacted request payload.
+     * @param array|null $httpHeaders Pertinent HTTP headers (non-sensitive).
+     * Example: ['User-Agent' => 'ClientApp/1.0']
+     * @param array|null $responseDetails HTTP status code, error messages, response summary.
+     * Example: ['status_code' => 200, 'message' => 'OK']
+     * @param float|null $responseTime Duration of the API call in milliseconds.
+     *
+     * @return self Returns the service instance for method chaining if desired.
+     */
+    public function createLogEntry(
+        ?string $databaseTransaction,
+        ?string $endpointAccessed,
+        ?array $requestDetails,
+        ?array $queryParameters,
+        ?string $payloadDetails,
+        ?array $httpHeaders,
+        ?array $responseDetails,
+        ?float $responseTime
+    ): self
+    {
+        // Populate the LogDataModel with the provided data
+        $this->log_data_model->databaseTransaction = $databaseTransaction;
+        $this->log_data_model->endpointAccessed = $endpointAccessed;
+        $this->log_data_model->requestDetails = $requestDetails;
+        $this->log_data_model->queryParameters = $queryParameters;
+        $this->log_data_model->payloadDetails = $payloadDetails;
+        $this->log_data_model->httpHeaders = $httpHeaders;
+        $this->log_data_model->responseDetails = $responseDetails;
+        $this->log_data_model->responseTime = $responseTime;
+
+        return $this;
     }
 
     public function saveLog()
