@@ -11,6 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
+
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 /**
  * Class Kernel
@@ -36,6 +37,7 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\ParseMultipartFormDataInputForNonPostRequests::class,
         \App\Http\Middleware\DoctrineMiddleware::class,
         \App\Http\Middleware\RequestScopedCacheMiddleware::class,
+        \App\Http\Middleware\InjectLogTraceIDMiddleware::class
     ];
 
     /**
