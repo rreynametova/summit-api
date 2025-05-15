@@ -107,7 +107,8 @@ return [
             */
             'events'     => [
                 'listeners'   => [
-                    Doctrine\ORM\Events::onFlush => App\Audit\AuditEventListener::class
+                    Doctrine\ORM\Events::onFlush => App\Audit\AuditEventListener::class,
+                    Doctrine\ORM\Events::postLoad => App\Audit\AuditEventListener::class
                 ],
                 'subscribers' => []
             ],
@@ -215,7 +216,7 @@ return [
     | - LaravelDoctrine\ORM\Loggers\FileLogger
     |--------------------------------------------------------------------------
     */
-    'logger' => env('DOCTRINE_LOGGER', 'LaravelDoctrine\ORM\Loggers\FileLogger'),
+    'logger' => env('DOCTRINE_LOGGER', \App\Services\ExternalLogger\Logger\FileLogger::class),
     /*
     |--------------------------------------------------------------------------
     | Cache

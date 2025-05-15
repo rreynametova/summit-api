@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Services\ExternalLogger;
+use App\Http\Middleware\InjectLogTraceIDMiddleware;
 use App\Services\ExternalLogger\Model\LogDataModel;
 use App\Services\ExternalLogger\Model\RequestModel;
 use App\Services\ExternalLogger\Model\ResponseModel;
+use App\Services\ExternalLogger\Model\SqlModel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -24,7 +26,7 @@ final class ExternalLoggerService
         $this->microservice_url = env('SIMPLE_LOG_MICROSERVICE_URL', 'http://host.docker.internal:80/api/logs');
 
         if (is_null($trace_id)) {
-            $trace_id = request()->header('X-Trace-Id') ?? uniqid();
+            $trace_id = request()->header(InjectLogTraceIDMiddleware::TRACE_ID_HEADER) ?? uniqid();
         }
         if (is_null($timestamp)) {
             $timestamp = date('Y-m-d H:i:s');;
@@ -85,6 +87,25 @@ final class ExternalLoggerService
         $this->log_data_model->responseCode = $responseCode;;
         $this->log_data_model->responseBody = $responseBody;
         $this->log_data_model->responseTime = $responseTime;
+
+        return $this;
+    }
+
+    public function createSqlEntry(
+        ?string $rawSql,
+        ?array $parameters,
+        ?string $executedSqlReadable,
+        ?int $executionTime
+    )
+    {
+        $this->log_data_model = new SqlModel();
+        $this->type = 'sql_query';
+
+        // Populate the LogDataModel with the provided data
+        $this->log_data_model->rawSql = $rawSql;;
+        $this->log_data_model->parameters = $parameters;
+        $this->log_data_model->executedSqlReadable = $executedSqlReadable;
+        $this->log_data_model->executionTime = $executionTime;
 
         return $this;
     }
