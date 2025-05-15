@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Services\ExternalLogger;
-use App\Services\ExternalLogger\LogDataModel;
+use App\Services\ExternalLogger\Model\LogDataModel;
+use App\Services\ExternalLogger\Model\RequestModel;
 
 /**
  * Class ExternalLoggerService, implements logic to save logs to external logger
@@ -21,9 +22,6 @@ final class ExternalLoggerService
         }
         if (is_null($timestamp)) {
             $timestamp = time();
-        }
-        if (is_null($log_data_model)) {
-            $log_data_model = new LogDataModel($this->trace_id, $this->timestamp);
         }
 
         $this->trace_id = $trace_id;
@@ -49,26 +47,24 @@ final class ExternalLoggerService
      *
      * @return self Returns the service instance for method chaining if desired.
      */
-    public function createLogEntry(
-        ?string $databaseTransaction,
+    public function createRequestEntry(
+        ?string $method,
         ?string $endpointAccessed,
         ?array $requestDetails,
         ?array $queryParameters,
-        ?string $payloadDetails,
-        ?array $httpHeaders,
-        ?array $responseDetails,
-        ?float $responseTime
+        ?array $payloadDetails,
+        ?array $httpHeaders
     ): self
     {
+        $this->log_data_model = new RequestModel();
+
         // Populate the LogDataModel with the provided data
-        $this->log_data_model->databaseTransaction = $databaseTransaction;
+        $this->log_data_model->method = $method;
         $this->log_data_model->endpointAccessed = $endpointAccessed;
         $this->log_data_model->requestDetails = $requestDetails;
         $this->log_data_model->queryParameters = $queryParameters;
         $this->log_data_model->payloadDetails = $payloadDetails;
         $this->log_data_model->httpHeaders = $httpHeaders;
-        $this->log_data_model->responseDetails = $responseDetails;
-        $this->log_data_model->responseTime = $responseTime;
 
         return $this;
     }
