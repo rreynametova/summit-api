@@ -10,19 +10,19 @@ namespace App\Services\ExternalLogger\Model;
 class ResponseModel extends LogDataModel
 {
     /**
-     * @var array|null HTTP status codes, error messages, and response payload summaries.
+     * @var int|null HTTP status codes, error messages, and response payload summaries.
      * Example: ['status_code' => 200, 'message' => 'Success', 'response_summary' => '{ "id": 123 }']
      */
     public $responseCode = null;
 
     /**
-     * @var array|null HTTP status codes, error messages, and response payload summaries.
+     * @var string|null HTTP status codes, error messages, and response payload summaries.
      * Example: ['status_code' => 200, 'message' => 'Success', 'response_summary' => '{ "id": 123 }']
      */
     public $responseBody = null;
 
     /**
-     * @var float|null Duration of the API call in milliseconds.
+     * @var int|null Duration of the API call in milliseconds.
      */
     public $responseTime = null;
 

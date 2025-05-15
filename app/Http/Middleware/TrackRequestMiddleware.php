@@ -8,6 +8,8 @@ use App\Providers\RouteServiceProvider;
 use Closure;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
+
 
 class TrackRequestMiddleware
 {
@@ -20,6 +22,7 @@ class TrackRequestMiddleware
     {
 
         try {
+            $this->startTime = microtime(true);
             $traceId = $request->headers->get(InjectLogTraceIDMiddleware::TRACE_ID_HEADER);
             $service = new ExternalLoggerService($traceId, date('Y-m-d H:i:s'));
 
@@ -39,10 +42,35 @@ class TrackRequestMiddleware
 
             $service->saveLog();
         } catch (\Throwable $e) {
-            Log::error("No se pudo trackear este request" - $e->getMessage());
+            Log::error("No se pudo trackear este request" . $e->getMessage());
         }
 
         $response = $next($request);
         return $response;
+    }
+
+    /**
+     * @param Request $request
+     * @param SymfonyResponse $response
+     * @return void
+     */
+    public function terminate(Request $request, Response $response): void
+    {
+        try {
+            $traceId = $request->headers->get(InjectLogTraceIDMiddleware::TRACE_ID_HEADER);
+            $service = new ExternalLoggerService($traceId, date('Y-m-d H:i:s'));
+            $endTime = microtime(true);
+            $responseTime = intval(($endTime - $this->startTime) * 1000);
+
+            $service->createResponseEntry(
+                intval($response->getStatusCode()),
+                $response->getContent(),
+                $responseTime,
+            );
+
+            $service->saveLog();
+        } catch (\Throwable $e) {
+            Log::error("No se pudo trackear este request" . $e->getMessage());
+        }
     }
 }

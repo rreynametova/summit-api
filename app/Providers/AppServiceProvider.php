@@ -12,6 +12,7 @@
  * limitations under the License.
  **/
 
+use App\Http\Middleware\TrackRequestMiddleware;
 use App\Http\Utils\Logs\LaravelMailerHandler;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
@@ -33,7 +34,7 @@ use Sokil\IsoCodes\IsoCodesFactory;
  */
 class AppServiceProvider extends ServiceProvider
 {
-    const DefaultSchema = 'https://';
+    const DefaultSchema = 'http://';
     static $summit_schedule_config_filter_dto_fields = [
         'type',
         'label',
@@ -696,5 +697,6 @@ class AppServiceProvider extends ServiceProvider
         App::singleton('App\Models\ResourceServer\IApi', 'models\\resource_server\\Api');
         App::singleton('App\Models\ResourceServer\IApiEndpoint', 'models\\resource_server\\ApiEndpoint');
         App::singleton('App\Models\ResourceServer\IApiScope', 'models\\resource_server\\ApiScope');
+        $this->app->singleton(TrackRequestMiddleware::class);
     }
 }
