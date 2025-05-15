@@ -91,6 +91,13 @@ return [
                 ],
             ]:[]
         ),
+        //
+        'telescope' => [
+            'driver' => 'sqlite',
+            'database' => database_path('telescope.sqlite'), // Ruta al archivo de tu base de datos SQLite
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
 
     ],
 
