@@ -29,6 +29,7 @@ class Kernel extends HttpKernel
     protected $middleware = [
         //\App\Http\Middleware\TrustProxies::class,
         \App\Http\Middleware\CheckForMaintenanceMode::class,
+        \App\Http\Middleware\InjectLogTraceIDMiddleware::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         //\Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
@@ -37,7 +38,6 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\ParseMultipartFormDataInputForNonPostRequests::class,
         \App\Http\Middleware\DoctrineMiddleware::class,
         \App\Http\Middleware\RequestScopedCacheMiddleware::class,
-        \App\Http\Middleware\InjectLogTraceIDMiddleware::class,
          \App\Http\Middleware\TrackRequestMiddleware::class
     ];
 

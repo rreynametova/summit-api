@@ -18,6 +18,7 @@ class InjectLogTraceIDMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+
         $traceId = $request->headers->get(self::TRACE_ID_HEADER);
 
         if (empty($traceId)) {
@@ -28,9 +29,8 @@ class InjectLogTraceIDMiddleware
             }
         }
 
+        $request->headers->set(self::TRACE_ID_HEADER, $traceId);
         $response = $next($request);
-        $response->headers->set(self::TRACE_ID_HEADER, $traceId);
-
         return $response;
     }
 }

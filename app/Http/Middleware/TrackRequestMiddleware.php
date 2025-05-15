@@ -23,7 +23,7 @@ class TrackRequestMiddleware
 
         try {
             $this->startTime = microtime(true);
-            $traceId = $request->headers->get(InjectLogTraceIDMiddleware::TRACE_ID_HEADER);
+            $traceId = $request->headers->get('x-log-trace-id');
             $service = new ExternalLoggerService($traceId, date('Y-m-d H:i:s'));
 
             $service->createRequestEntry(
