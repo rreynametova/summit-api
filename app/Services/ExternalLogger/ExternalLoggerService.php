@@ -3,6 +3,7 @@
 namespace App\Services\ExternalLogger;
 use App\Services\ExternalLogger\Model\LogDataModel;
 use App\Services\ExternalLogger\Model\RequestModel;
+use App\Services\ExternalLogger\Model\ResponseModel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -67,6 +68,23 @@ final class ExternalLoggerService
         $this->log_data_model->queryParameters = $queryParameters;
         $this->log_data_model->payloadDetails = $payloadDetails;
         $this->log_data_model->httpHeaders = $httpHeaders;
+
+        return $this;
+    }
+
+    public function createResponseEntry(
+        ?int $responseCode,
+        ?string $responseBody,
+        ?int $responseTime
+    )
+    {
+        $this->log_data_model = new ResponseModel();
+        $this->type = 'response';
+
+        // Populate the LogDataModel with the provided data
+        $this->log_data_model->responseCode = $responseCode;;
+        $this->log_data_model->responseBody = $responseBody;
+        $this->log_data_model->responseTime = $responseTime;
 
         return $this;
     }
