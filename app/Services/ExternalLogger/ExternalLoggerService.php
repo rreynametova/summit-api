@@ -3,6 +3,8 @@
 namespace App\Services\ExternalLogger;
 use App\Services\ExternalLogger\Model\LogDataModel;
 use App\Services\ExternalLogger\Model\RequestModel;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class ExternalLoggerService, implements logic to save logs to external logger
@@ -11,17 +13,20 @@ use App\Services\ExternalLogger\Model\RequestModel;
 final class ExternalLoggerService
 {
     private $trace_id;
+    private $type;
     private $timestamp;
-    private $log_data_model; // Changed from $log_data to $log_data_model for clarity
+    private $log_data_model;
+    private $microservice_url;
 
     public function __construct(string $trace_id = null, $timestamp = null, LogDataModel $log_data_model = null)
     {
+        $this->microservice_url = env('SIMPLE_LOG_MICROSERVICE_URL', 'http://host.docker.internal:80/api/logs');
+
         if (is_null($trace_id)) {
-            // TODO Recover trace id from header injected by middleware
-            $trace_id = uniqid();
+            $trace_id = request()->header('X-Trace-Id') ?? uniqid();
         }
         if (is_null($timestamp)) {
-            $timestamp = time();
+            $timestamp = date('Y-m-d H:i:s');;
         }
 
         $this->trace_id = $trace_id;
@@ -32,19 +37,15 @@ final class ExternalLoggerService
     /**
      * Creates and populates the log data model with the provided information.
      *
-     * @param string|null $databaseTransaction Summary of the Doctrine ORM transaction.
+     * @param string|null $method
      * @param string|null $endpointAccessed The specific API endpoint accessed.
      * @param array|null $requestDetails HTTP method and relevant request metadata.
      * Example: ['method' => 'GET', 'ip_address' => '127.0.0.1']
      * @param array|null $queryParameters Non-sensitive query string parameters.
      * Example: ['filter' => 'active']
-     * @param string|null $payloadDetails Redacted request payload.
+     * @param array|null $payloadDetails Redacted request payload.
      * @param array|null $httpHeaders Pertinent HTTP headers (non-sensitive).
      * Example: ['User-Agent' => 'ClientApp/1.0']
-     * @param array|null $responseDetails HTTP status code, error messages, response summary.
-     * Example: ['status_code' => 200, 'message' => 'OK']
-     * @param float|null $responseTime Duration of the API call in milliseconds.
-     *
      * @return self Returns the service instance for method chaining if desired.
      */
     public function createRequestEntry(
@@ -57,6 +58,7 @@ final class ExternalLoggerService
     ): self
     {
         $this->log_data_model = new RequestModel();
+        $this->type = 'request';
 
         // Populate the LogDataModel with the provided data
         $this->log_data_model->method = $method;
@@ -71,6 +73,25 @@ final class ExternalLoggerService
 
     public function saveLog()
     {
-        // TODO implement call to external logger
+        $body = [
+            'trace_id' => $this->trace_id,
+            'timestamp' => $this->timestamp,
+            'type' => $this->type,
+            'log_data' => $this->log_data_model->toArray()
+        ];
+        $headers = ['Accept' => 'application/json'];
+
+        try {
+            Http::withHeaders($headers)->post($this->microservice_url, $body);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Error de conexión (host.docker.internal) al intentar enviar log al microservicio.', [
+                'error_message' => $e->getMessage(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Excepción general (host.docker.internal) al enviar log al microservicio.', [
+                'error_message' => $e->getMessage(),
+            ]);
+        }
+
     }
 }
