@@ -12,7 +12,9 @@
  * limitations under the License.
  **/
 use App\Http\Utils\CSVExporter;
+use App\Services\ExternalLogger\ExternalLoggerService;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Request;
@@ -25,6 +27,7 @@ abstract class JsonController extends Controller
 
     public function __construct()
     {
+
     }
 
     protected function error500(Exception $ex)
@@ -91,7 +94,7 @@ abstract class JsonController extends Controller
 
     protected function error404($data = ['message' => 'Entity Not Found'])
     {
-        if(!is_array($data)){
+        if (!is_array($data)) {
             $data = ['message' => $data];
         }
         return Response::json($data, 404);
@@ -99,7 +102,7 @@ abstract class JsonController extends Controller
 
     protected function error403($data = ['message' => 'Forbidden'])
     {
-        if(!is_array($data)){
+        if (!is_array($data)) {
             $data = ['message' => $data];
         }
         return Response::json($data, 403);
@@ -107,7 +110,7 @@ abstract class JsonController extends Controller
 
     protected function error401($data = ['message' => 'You don\'t have access to this item through the API.'])
     {
-        if(!is_array($data)){
+        if (!is_array($data)) {
             $data = ['message' => $data];
         }
         return Response::json($data, 401);
@@ -134,7 +137,7 @@ abstract class JsonController extends Controller
      */
     protected function error412($messages, int $code = 0)
     {
-        if(!is_array($messages)){
+        if (!is_array($messages)) {
             $messages = [$messages];
         }
         return Response::json([
@@ -152,8 +155,9 @@ abstract class JsonController extends Controller
      * @param array $columns
      * @return \Illuminate\Http\Response
      */
-    protected function export($format, $filename, array $items, array $formatters = [], array $columns = []){
-        if($format == 'csv') return $this->csv($filename, $items, $formatters,  ",",  'application/vnd.ms-excel', $columns);
+    protected function export($format, $filename, array $items, array $formatters = [], array $columns = [])
+    {
+        if ($format == 'csv') return $this->csv($filename, $items, $formatters, ",", 'application/vnd.ms-excel', $columns);
     }
 
     /**
@@ -165,15 +169,16 @@ abstract class JsonController extends Controller
      * @param array $columns
      * @return \Illuminate\Http\Response
      */
-    protected function csv($filename, array $items,  array $formatters = [], $field_separator = ",", $mime_type = 'application/vnd.ms-excel', array $columns = []){
+    protected function csv($filename, array $items, array $formatters = [], $field_separator = ",", $mime_type = 'application/vnd.ms-excel', array $columns = [])
+    {
         $headers = [
-            'Cache-Control'             => 'must-revalidate, post-check=0, pre-check=0',
-            'Content-type'              => $mime_type,
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Content-type' => $mime_type,
             'Content-Transfer-Encoding' => 'binary',
-            'Content-Disposition'       => 'attachment; filename='.$filename.".csv",
-            'Last-Modified: '           => gmdate('D, d M Y H:i:s').' GMT',
-            'Expires'                   => '0',
-            'Pragma'                    => 'public',
+            'Content-Disposition' => 'attachment; filename=' . $filename . ".csv",
+            'Last-Modified: ' => gmdate('D, d M Y H:i:s') . ' GMT',
+            'Expires' => '0',
+            'Pragma' => 'public',
         ];
 
         return $this->rawContent
@@ -188,7 +193,8 @@ abstract class JsonController extends Controller
      * @param array $headers
      * @return \Illuminate\Http\Response
      */
-    public function rawContent(string $body, array $headers = []){
+    public function rawContent(string $body, array $headers = [])
+    {
         return Response::make
         (
             $body,
@@ -202,17 +208,48 @@ abstract class JsonController extends Controller
      * @param string $content
      * @return \Illuminate\Http\Response
      */
-    protected function pdf(string $filename, string $content){
+    protected function pdf(string $filename, string $content)
+    {
         $headers = [
-            'Cache-Control'             => 'must-revalidate, post-check=0, pre-check=0',
-            'Content-type'              => "application/pdf",
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Content-type' => "application/pdf",
             'Content-Transfer-Encoding' => 'binary',
-            'Content-Disposition'       => 'attachment; filename='.basename($filename),
-            'Expires'                   => '0',
-            'Last-Modified: '           => gmdate('D, d M Y H:i:s').' GMT',
-            'Pragma'                    => 'public',
+            'Content-Disposition' => 'attachment; filename=' . basename($filename),
+            'Expires' => '0',
+            'Last-Modified: ' => gmdate('D, d M Y H:i:s') . ' GMT',
+            'Pragma' => 'public',
         ];
 
         return Response::make($content, 200, $headers);
+    }
+
+    /**
+     * Execute an action on the controller.
+     *
+     * @param string $method
+     * @param array $parameters
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function callAction($method, $parameters)
+    {
+        $request = request();
+        $controllerName = class_basename($this);
+        $actionName = $method;
+        $user = Auth::user();
+
+        $traceId = $request->headers->get('x-log-trace-id');
+        $service = new ExternalLoggerService($traceId, date('Y-m-d H:i:s'));
+
+        $service->createApplicationEntry(
+            $user,
+            $controllerName,
+            $actionName
+        );
+
+        $service->saveLog();
+
+        $response = parent::callAction($method, $parameters);
+
+        return $response;
     }
 }
