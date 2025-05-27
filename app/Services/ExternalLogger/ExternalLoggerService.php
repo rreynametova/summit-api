@@ -2,6 +2,7 @@
 
 namespace App\Services\ExternalLogger;
 use App\Http\Middleware\InjectLogTraceIDMiddleware;
+use App\Services\ExternalLogger\Model\ApplicationModel;
 use App\Services\ExternalLogger\Model\LogDataModel;
 use App\Services\ExternalLogger\Model\RequestModel;
 use App\Services\ExternalLogger\Model\ResponseModel;
@@ -110,6 +111,24 @@ final class ExternalLoggerService
         return $this;
     }
 
+    public function createApplicationEntry(
+        ?\stdClass $user,
+        ?string $controller,
+        ?string $action
+    )
+    {
+        $this->log_data_model = new ApplicationModel();
+        $this->type = 'application';
+
+        // Populate the LogDataModel with the provided data
+        $this->log_data_model->user = $user ?? 'Guest user';
+        $this->log_data_model->user_role = $user ?? 'N/A';
+        $this->log_data_model->controller = $controller;
+        $this->log_data_model->action = $action;
+
+        return $this;
+    }
+
     public function saveLog()
     {
         $body = [
@@ -121,7 +140,7 @@ final class ExternalLoggerService
         $headers = ['Accept' => 'application/json'];
 
         try {
-            Http::withHeaders($headers)->post($this->microservice_url, $body);
+            $response = Http::withHeaders($headers)->post($this->microservice_url, $body);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::error('Error de conexión (host.docker.internal) al intentar enviar log al microservicio.', [
                 'error_message' => $e->getMessage(),
@@ -131,6 +150,5 @@ final class ExternalLoggerService
                 'error_message' => $e->getMessage(),
             ]);
         }
-
     }
 }
